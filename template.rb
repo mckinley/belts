@@ -47,11 +47,11 @@ end
 
 def create_review_apps_setup_script
   template(
-    'bin_setup_review_app.erb',
-    'bin/setup_review_app',
+    'bin_setup-review-app.erb',
+    'bin/setup-review-app',
     force: true,
   )
-  run 'chmod a+x bin/setup_review_app'
+  run 'chmod a+x bin/setup-review-app'
 end
 
 def create_heroku_application_manifest_file
@@ -74,8 +74,11 @@ end
 
 def set_heroku_remotes
   remotes = <<~SHELL
+    # Only if this isn't CI
+    if [ -z "$CI" ]; then
     #{command_to_join_heroku_app('staging')}
     #{command_to_join_heroku_app('production')}
+    fi
     git config heroku.remote staging
   SHELL
   append_file 'bin/setup', remotes
