@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Exit if any subcommand fails
+set -e
+
+# Install Ruby dependencies via Bundler
+gem install bundler --conservative
+bundle check || bundle install
+
+# Install JavaScript dependencies via Yarn
+bin/yarn
+
+# Prepare database
+bin/rails db:setup
+
+# Restart application server
+bin/rails restart
+
+# Only if not CI
+if [ -z "$CI" ]; then
+if heroku join --app <%= app_name.dasherize %>-staging > /dev/null 2>&1; then
+git remote add staging git@heroku.com:<%= app_name.dasherize %>-staging.git || true
+printf 'You are a collaborator on the "<%= app_name.dasherize %>-staging" Heroku app
+'
+else
+printf 'Ask for access to the "<%= app_name.dasherize %>-staging" Heroku app
+'
+fi
+
+if heroku join --app <%= app_name.dasherize %>-production > /dev/null 2>&1; then
+git remote add production git@heroku.com:<%= app_name.dasherize %>-production.git || true
+printf 'You are a collaborator on the "<%= app_name.dasherize %>-production" Heroku app
+'
+else
+printf 'Ask for access to the "<%= app_name.dasherize %>-production" Heroku app
+'
+fi
+fi
+
+git config heroku.remote staging

@@ -17,10 +17,9 @@ def create_heroku_apps
   say 'Creating Heroku apps'
   create_staging_heroku_app options[:heroku_flags]
   create_production_heroku_app options[:heroku_flags]
-  set_heroku_remotes
+  create_setup_script
   set_heroku_application_host
   set_heroku_rails_secrets
-  create_heroku_pipeline
 end
 
 def create_base_dotfiles
@@ -46,11 +45,7 @@ def create_deploy_script
 end
 
 def create_review_apps_setup_script
-  template(
-    'bin_setup-review-app.erb',
-    'bin/setup-review-app',
-    force: true,
-  )
+  template 'bin_setup-review-app.erb', 'bin/setup-review-app'
   run 'chmod a+x bin/setup-review-app'
 end
 
@@ -59,7 +54,7 @@ def create_heroku_application_manifest_file
 end
 
 def configure_ci
-  copy_file 'circle.yml'
+  template 'circle.yml.erb', 'circle.yml'
 end
 
 def create_staging_heroku_app(flags)
@@ -72,16 +67,15 @@ def create_production_heroku_app(flags)
   run_toolbelt_command "create #{app_name} #{flags}", 'production'
 end
 
-def set_heroku_remotes
-  remotes = <<~SHELL
-    # Only if this isn't CI
-    if [ -z "$CI" ]; then
-    #{command_to_join_heroku_app('staging')}
-    #{command_to_join_heroku_app('production')}
-    fi
-    git config heroku.remote staging
-  SHELL
-  append_file 'bin/setup', remotes
+def create_setup_script
+  pipelines_plugin = `heroku help | grep pipelines`
+  if pipelines_plugin.empty?
+    puts 'You need heroku pipelines plugin. Run: brew upgrade heroku-toolbelt'
+    exit 1
+  end
+
+  template 'bin_setup.erb', 'bin/setup'
+  run 'chmod a+x bin/setup'
 end
 
 def set_heroku_application_host
@@ -100,24 +94,6 @@ def set_heroku_rails_secrets
       environment
     )
   end
-end
-
-def create_heroku_pipeline
-  pipelines_plugin = `heroku help | grep pipelines`
-  if pipelines_plugin.empty?
-    puts 'You need heroku pipelines plugin. Run: brew upgrade heroku-toolbelt'
-    exit 1
-  end
-
-  run_toolbelt_command(
-    "pipelines:create #{heroku_app_name} -a #{heroku_app_name}-staging --stage staging",
-    'staging'
-  )
-
-  run_toolbelt_command(
-    "pipelines:add #{heroku_app_name} -a #{heroku_app_name}-production --stage production",
-    'production'
-  )
 end
 
 def command_to_join_heroku_app(environment)
