@@ -13,3 +13,6 @@ rails app:template LOCATION=~/Projects/Belts/belts/template.rb
 Use heroku rsa key in Lastpass
 In Circle Ci Settings > Heroku Deployment
 Set deploy user
+
+## TODO:
+add `config.autoload_paths << Rails.root.join('lib')` to config/application.rb
