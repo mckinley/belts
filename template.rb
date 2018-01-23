@@ -3,6 +3,33 @@
 def create_base_setup
   say 'Creating base setup'
   create_base_dotfiles
+  add_gems
+end
+
+def add_gems
+  gem_group :development, :test do
+    gem 'awesome_print'
+    gem 'rspec-rails'
+    gem 'factory_bot_rails'
+    gem 'poltergeist'
+    gem 'pry-rails'
+    gem 'pry-byebug'
+    gem 'bundler-audit', require: false
+  end
+
+  gem_group :development do
+    gem 'spring-commands-rspec'
+  end
+
+  gem_group :test do
+    gem 'launchy'
+  end
+
+  after_bundle do
+    generate 'rspec:install'
+    copy_file 'spec_support_capybara.rb', 'spec/support/capybara.rb'
+    uncomment_lines 'spec/rails_helper.rb', 'each { |f| require f }'
+  end
 end
 
 def create_local_heroku_setup
@@ -132,6 +159,3 @@ end
 create_base_setup
 create_local_heroku_setup
 create_heroku_apps
-
-
-
