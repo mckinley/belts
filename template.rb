@@ -81,7 +81,7 @@ def create_heroku_application_manifest_file
 end
 
 def configure_ci
-  template 'circle.yml.erb', 'circle.yml'
+  template 'circle.yml.erb', '.circleci/circle.yml'
 end
 
 def create_staging_heroku_app(flags)
@@ -159,3 +159,10 @@ end
 create_base_setup
 create_local_heroku_setup
 create_heroku_apps
+
+
+after_bundle do
+  git :init
+  git add: '.'
+  git commit: "-a -m 'Initial commit'"
+end

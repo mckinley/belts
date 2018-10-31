@@ -1,0 +1,81 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/ruby:2.5.1-stretch-node-browsers
+        environment:
+          PGHOST: localhost
+          PGUSER: <%= app_name.dasherize %>
+          RAILS_ENV: test
+      - image: postgres:10.4
+        environment:
+          POSTGRES_USER: <%= app_name.dasherize %>
+          POSTGRES_DB: <%= app_name.dasherize %>_test
+          POSTGRES_PASSWORD: ""
+    working_directory: ~/<%= app_name.dasherize %>
+    steps:
+      - checkout
+
+      # Restore Cached Dependencies
+      - type: cache-restore
+        name: Restore bundle cache
+        key: <%= app_name.dasherize %>-{{ checksum "Gemfile.lock" }}
+
+      # Bundle install dependencies
+      - run: bundle install --path vendor/bundle
+
+      # Cache Dependencies
+      - type: cache-save
+        name: Store bundle cache
+        key: <%= app_name.dasherize %>-{{ checksum "Gemfile.lock" }}
+        paths:
+          - vendor/bundle
+
+      # Only necessary if app uses webpacker or yarn in some other way
+      - restore_cache:
+          name: Restore Yarn Package Cache
+          keys:
+            - <%= app_name.dasherize %>-yarn-{{ checksum "yarn.lock" }}
+
+      - run:
+          name: Yarn Install
+          command: yarn install --ignore-engines --cache-folder ~/.cache/yarn
+
+      # Store yarn / webpacker cache
+      - save_cache:
+          name: Save Yarn Package Cache
+          key: <%= app_name.dasherize %>-yarn-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.cache/yarn
+
+      # Wait for DB
+      - run: dockerize -wait tcp://localhost:5432 -timeout 1m
+
+      # Setup the database
+      - run: bundle exec rake db:setup
+
+      # Run the tests
+      - run: bundle exec rake
+
+  deploy:
+    docker:
+      - image: buildpack-deps:trusty
+    steps:
+      - checkout
+      - run: git push https://heroku:$HEROKU_API_KEY@git.heroku.com/<%= app_name.dasherize %>-staging.git master
+      - run: curl https://cli-assets.heroku.com/install.sh | sh
+      - run: heroku pg:reset --confirm <%= app_name.dasherize %>-staging --app <%= app_name.dasherize %>-staging
+      - run: heroku run rake db:migrate --app <%= app_name.dasherize %>-staging
+      - run: heroku run rake db:seed --app <%= app_name.dasherize %>-staging
+      - run: heroku restart --app <%= app_name.dasherize %>-staging
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
