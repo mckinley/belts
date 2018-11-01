@@ -81,7 +81,7 @@ def create_heroku_application_manifest_file
 end
 
 def configure_ci
-  template 'circle.yml.erb', '.circleci/circle.yml'
+  template '.circleci/config.yml.erb', '.circleci/circle.yml'
 end
 
 def create_staging_heroku_app(flags)
