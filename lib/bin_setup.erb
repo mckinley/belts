@@ -11,7 +11,7 @@ bundle check || bundle install
 bin/yarn
 
 # Prepare database
-bin/rails db:setup
+bin/rails db:create db:migrate db:seed
 
 # Restart application server
 bin/rails restart
