@@ -4,6 +4,7 @@ def create_base_setup
   say 'Creating base setup'
   create_base_dotfiles
   add_gems
+  configure_application
 end
 
 def add_gems
@@ -29,6 +30,26 @@ def add_gems
     generate 'rspec:install'
     copy_file 'spec_support_capybara.rb', 'spec/support/capybara.rb'
     uncomment_lines 'spec/rails_helper.rb', 'each { |f| require f }'
+  end
+end
+
+def configure_application
+  application do
+    <<-'RUBY'
+    config.generators do |generate|
+      generate.helper false
+      generate.javascripts false
+      generate.routing_specs false
+      generate.stylesheets false
+      generate.test_framework :rspec
+      generate.view_specs false
+      generate.controller_specs false
+      generate.request_specs true
+    end
+    
+    config.autoload_paths << "#{Rails.root}/lib"
+    config.eager_load_paths << "#{Rails.root}/lib"
+    RUBY
   end
 end
 
