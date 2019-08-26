@@ -163,6 +163,10 @@ def run_heroku_command(command, environment)
   run("heroku #{command} --remote #{environment}")
 end
 
+def source_paths
+  [(Pathname.new(__FILE__).dirname + 'lib').expand_path]
+end
+
 create_base_setup
 create_local_heroku_setup
 create_heroku_apps
