@@ -1,3 +1,4 @@
+# rails new app_name -m ~/Projects/Belts/belts/template.rb
 # rails app:template LOCATION=~/Projects/Belts/belts/template.rb
 
 def create_base_setup
@@ -45,7 +46,7 @@ def configure_application
       generate.controller_specs false
       generate.request_specs true
     end
-    
+
     config.autoload_paths << "#{Rails.root}/lib"
     config.eager_load_paths << "#{Rails.root}/lib"
     RUBY
@@ -72,7 +73,7 @@ end
 
 def create_base_dotfiles
   copy_file '.envrc'
-  copy_file '.ruby-version'
+  copy_file '.tool-versions'
 end
 
 def create_deploy_script
@@ -106,12 +107,12 @@ def configure_ci
 end
 
 def create_staging_heroku_app(flags)
-  app_name = heroku_app_name_for('staging')
+  app_name = heroku_app_name_for('stag')
   run_heroku_command "create #{app_name} #{flags}", 'staging'
 end
 
 def create_production_heroku_app(flags)
-  app_name = heroku_app_name_for('production')
+  app_name = heroku_app_name_for('prod')
   run_heroku_command "create #{app_name} #{flags}", 'production'
 end
 
@@ -123,8 +124,8 @@ end
 def set_heroku_application_host
   %w(staging production).each do |environment|
     run_heroku_command(
-      "config:add APPLICATION_HOST=#{heroku_app_name}-#{environment}.herokuapp.com",
-      environment
+        "config:add APPLICATION_HOST=#{heroku_app_name}-#{environment}.herokuapp.com",
+        environment
     )
   end
 end
@@ -132,8 +133,8 @@ end
 def set_heroku_rails_secrets
   %w(staging production).each do |environment|
     run_heroku_command(
-      "config:add SECRET_KEY_BASE=#{generate_secret}",
-      environment
+        "config:add SECRET_KEY_BASE=#{generate_secret}",
+        environment
     )
   end
 end
@@ -141,8 +142,8 @@ end
 def set_heroku_backup_schedule
   %w(staging production).each do |environment|
     run_heroku_command(
-      "pg:backups:schedule DATABASE_URL --at '10:00 UTC'",
-      environment
+        "pg:backups:schedule DATABASE_URL --at '10:00 UTC'",
+        environment
     )
   end
 end
@@ -167,13 +168,14 @@ def source_paths
   [(Pathname.new(__FILE__).dirname + 'lib').expand_path]
 end
 
+after_bundle do
+  run 'bundle lock --add-platform x86_64-linux'
+  run 'rails generate rspec:install'
+  git :init
+  git add: '.'
+  git commit: "-a -m 'initial commit'"
+end
+
 create_base_setup
 create_local_heroku_setup
 create_heroku_apps
-
-
-after_bundle do
-  git :init
-  git add: '.'
-  git commit: "-a -m 'Initial commit'"
-end
