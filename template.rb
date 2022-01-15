@@ -55,6 +55,7 @@ end
 
 def create_local_heroku_setup
   say 'Creating local Heroku setup'
+  create_setup_script
   create_deploy_script
   create_review_apps_setup_script
   create_heroku_application_manifest_file
@@ -65,7 +66,6 @@ def create_heroku_apps
   say 'Creating Heroku apps'
   create_staging_heroku_app options[:heroku_flags]
   create_production_heroku_app options[:heroku_flags]
-  create_setup_script
   set_heroku_application_host
   set_heroku_rails_secrets
   set_heroku_backup_schedule
